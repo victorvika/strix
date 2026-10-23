@@ -65,5 +65,5 @@ Target-specific workflows built on the same engine:
 - Lint/format/type-check/security, all in one: `make check-all` (ruff, mypy, bandit).
 - Tests: `uv run pytest`.
 - Run from source: `uv run strix --target <target>`.
-- Layout: `strix/agents` (agent graph + prompts), `strix/tools` (proxy, browser, terminal, scanners), `strix/runtime` (Docker sandbox), `strix/report` (findings, SARIF), `strix/skills` (internal knowledge packs the pentest agents load — different from the consumer skills in `skills/`), `strix/interface` (CLI/TUI), `containers/` (sandbox image).
+- Layout: `strix/agents` (agent graph + prompts), `strix/tools` (proxy, browser, terminal, scanners), `strix/runtime` (Docker sandbox), `strix/report` (findings, SARIF), `strix/skills` (internal knowledge packs the pentest agents load — different from the consumer skills in `skills/`), `strix/interface` (CLI/TUI), `containers/` (sandbox image). `labs/` holds intentionally vulnerable practice targets (currently a local API with nine planted bugs) — keep them out of production paths, and keep their tests honest.
 - Pre-commit hooks: `make pre-commit` (or `uv run pre-commit install`).

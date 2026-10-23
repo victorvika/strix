@@ -1,4 +1,4 @@
-.PHONY: help install dev-install format lint format-check lint-check type-check security check-all clean pre-commit setup-dev dev viewer wheel tui-build tui-test tui-lint
+.PHONY: help install dev-install format lint format-check lint-check type-check security check-all clean pre-commit setup-dev dev lab viewer wheel tui-build tui-test tui-lint
 
 TUI_BINARY := build/sidecar/strix-tui$(if $(filter Windows_NT,$(OS)),.exe)
 
@@ -19,6 +19,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  pre-commit    - Run pre-commit hooks on all files"
+	@echo "  lab           - Run the practice API in labs/vulnerable-api (loopback)"
 	@echo "  viewer        - Rebuild the local-viewer SPA (commit the output)"
 	@echo "  wheel         - Build a platform wheel with the bundled Go sidecar"
 	@echo "  clean         - Clean up cache files and artifacts"
@@ -80,6 +81,10 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete 2>/dev/null || true
 	@echo "✅ Cleanup complete!"
+
+lab:
+	@echo "🧪 Starting the vulnerable practice API on http://127.0.0.1:8080 ..."
+	python3 labs/vulnerable-api/server.py --port 8080
 
 viewer:
 	@echo "🖥️  Building the local-viewer SPA..."

@@ -1,0 +1,76 @@
+---
+title: "Practice Lab"
+description: "A dependency-free vulnerable API for practising Strix and manual verification"
+---
+
+`labs/vulnerable-api` is a small, intentionally vulnerable API that ships with
+the repository. It exists so you can watch a finding move from "suspicion" to
+"validated proof" without touching a production system.
+
+<Warning>
+  The lab is broken by design and must never be deployed to a public network.
+  It binds to loopback by default and seeds fake credentials only.
+</Warning>
+
+## Run it
+
+No dependencies beyond Python 3.12:
+
+```bash
+python labs/vulnerable-api/server.py --port 8080
+# http://127.0.0.1:8080/health
+```
+
+Then point Strix at the bundled spec:
+
+```bash
+strix -n -t ./labs/vulnerable-api/openapi.json -t http://127.0.0.1:8080 \
+  --scan-mode quick --max-budget 2 \
+  --instruction "Seeded accounts, all with password Passw0rd!:
+    victim@shopkart.test, attacker@shopkart.test, admin@shopkart.test.
+    Test authorization across the attacker and victim accounts. Local lab, no rate limit needed."
+```
+
+## What is planted
+
+| ID | Class | Endpoint |
+| --- | --- | --- |
+| B1 | BOLA / IDOR | `GET /api/v1/invoices/{id}` |
+| B2 | Mass assignment to admin | `PATCH /api/v1/users/me` with `role` |
+| B3 | Broken function-level authorization | `GET /api/v1/admin/users` |
+| B4 | JWT `alg: none` forgery | any authenticated route |
+| B5 | Excessive data exposure (md5 hash, PII) | `GET /api/v1/users/{id}` |
+| B6 | SQL injection via `UNION` | `GET /api/v1/search?q=` |
+| B7 | OTP with no attempt cap | `POST /api/v1/auth/verify-otp` |
+| B8 | Negative-amount business logic | `POST /api/v1/wallet/transfer` |
+| B9 | Unsalted MD5 password storage | `users.password` |
+
+## Use it the right way
+
+1. Reproduce each bug **by hand** first, using the OpenAPI spec or `curl`.
+2. Write down the request, the response, and the missing check that explains it.
+3. Only then run the reference script, which reproduces all of them with
+   evidence:
+
+```bash
+labs/vulnerable-api/find_bugs.sh http://127.0.0.1:8080
+```
+
+4. Reset state between attempts:
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/_lab/reset
+```
+
+<Note>
+  `find_bugs.sh` is a teaching aid, not a scanning method. Reading its output
+  teaches you what a finished finding looks like; reproducing it by hand teaches
+  you the skill. Finding bugs here proves nothing about a real program — the
+  transferable part is the verification discipline.
+</Note>
+
+## Extend it
+
+`tests/test_vulnerable_api_lab.py` asserts that every planted weakness is still
+exploitable, so the lab cannot silently rot. Add a new bug and a matching test;
+`tests/test_skills_corpus.py` covers the skill library the same way.

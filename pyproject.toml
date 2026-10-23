@@ -238,6 +238,12 @@ ignore = [
 "tests/test_codex_auth.py" = ["S105", "S106", "SLF001"]
 # Hatchling loads the build hook by path, not as an importable package.
 "scripts/tui_sidecar_hook.py" = ["INP001"]
+# Practice target in labs/: a deliberately vulnerable API, so the planted SQL
+# injection (S608), seeded lab credentials (S105), CLI print (T201), and the
+# stdlib http.server handler naming (N802) are all expected. The directory is
+# hyphenated on purpose, so it is not an installable package (INP001).
+"labs/vulnerable-api/server.py" = ["INP001", "S105", "S608", "T201", "N802"]
+"tests/test_vulnerable_api_lab.py" = ["S105", "SLF001"]
 # Stdlib HTTP handler overrides (do_GET/do_POST).
 "strix/interface/auth_cli.py" = ["N802"]
 "tests/test_codex_streaming.py" = ["N802"]
@@ -423,6 +429,8 @@ known_third_party = ["pydantic", "litellm"]
 [tool.bandit]
 # Tests are covered by ruff's flake8-bandit rules (see per-file-ignores above),
 # which is where fixture tokens and loopback URL opens are already waived.
-exclude_dirs = ["docs", "build", "dist", "tests"]
+# ``labs`` hosts intentionally vulnerable practice targets (planted SQL injection,
+# seeded credentials), so security linters must not treat them as production code.
+exclude_dirs = ["docs", "build", "dist", "tests", "labs"]
 skips = ["B101", "B601", "B404", "B603", "B607"]  # Skip assert, shell injection, subprocess import and partial path checks
 severity = "medium"
