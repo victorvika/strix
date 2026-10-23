@@ -26,7 +26,10 @@
               "usage/cli",
               "usage/scan-modes",
               "usage/instructions",
-              "usage/viewer"
+              "usage/viewer",
+              "usage/bug-bounty",
+              "usage/mobile-apps",
+              "usage/practice-lab"
             ]
           },
           {

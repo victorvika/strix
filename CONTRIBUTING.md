@@ -44,6 +44,12 @@ Thank you for your interest in contributing to Strix! This guide will help you g
 
 Skills are specialized knowledge packages that enhance agent capabilities. See [strix/skills/README.md](strix/skills/README.md) for detailed guidelines.
 
+Every skill is checked by `tests/test_skills_corpus.py`, which enforces valid
+frontmatter, a `name` that matches the file, and unique bare names — run it before
+opening a PR. If your skill describes a technique, consider extending
+`labs/vulnerable-api` with a planted instance plus a test, so the technique stays
+reproducible.
+
 ### Quick Guide
 
 1. **Choose the right category** (`/vulnerabilities`, `/frameworks`, `/technologies`, etc.)

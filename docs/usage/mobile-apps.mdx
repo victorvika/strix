@@ -1,0 +1,89 @@
+---
+title: "Mobile App Testing"
+description: "Test the API behind an iOS or Android app from captured traffic, a spec, or backend source"
+---
+
+The valuable target behind a mobile app is almost always **the API it talks to**.
+Strix does not need the device to test that API — it needs the traffic, the
+contract, or the source.
+
+## What the sandbox can and cannot do
+
+The Strix sandbox is a Linux container. It ships an intercepting proxy, a shell,
+a Python runtime, and the usual web/API tooling. It does **not** ship `adb`,
+`frida`, `objection`, `jadx`, `apktool`, MobSF, or an attached device, and it
+cannot decompile an APK or bypass certificate pinning for you.
+
+Anything that requires a device happens on your machine before the run. Strix
+then attacks the API with the material you captured.
+
+<Note>
+  Do not accept agent output that claims to have hooked a running app, read
+  device storage, or defeated pinning from inside the sandbox. Those claims
+  cannot be produced there.
+</Note>
+
+## Inputs that work
+
+| Input | How to produce it | Why it is good |
+| --- | --- | --- |
+| **Captured traffic** | Proxy the app, exercise every screen, export HAR or raw requests | Largest surface, real auth headers and device headers |
+| **API spec** | `openapi.json` from the backend, or a Postman export | Every declared operation, no crawling |
+| **Backend source** | The repository serving the mobile API | White-box review finds authorization bugs fastest |
+| **Static-extract artefacts** | Endpoint and secret lists you made offline with jadx/apktool/MobSF, saved as files | Cheap hints, but unverified |
+
+## Run it
+
+```bash
+# Spec-driven sweep of the mobile backend
+strix -n -t ./mobile-api/openapi.json -t https://api.target.com --scan-mode deep --max-budget 20 \
+  --instruction "Mobile client traffic is in ./mobile-api/requests.har. Use it for real
+    parameter values and headers. Test object-level authorization across the two accounts
+    I control, plus mass assignment on any field the client never sends. Max 2 req/sec."
+
+# White-box: the service behind the app
+strix -n -t https://github.com/org/mobile-backend -t https://api.target.com --scan-mode deep
+```
+
+Mount the capture directory as a target (`-t ./mobile-api`) so the agent can read
+it; a local directory target is mounted read-write, so keep it a copy.
+
+## What pays in mobile APIs
+
+1. **BOLA/IDOR** — mobile payloads carry object ids (`user_id`, `wallet_id`,
+   `device_id`, `kyc_id`) far more openly than web UIs, because the client is
+   trusted to display only the caller's data.
+2. **Broken function-level authorization** — internal and agent endpoints that
+   ship inside the app but are never called by the visible UI.
+3. **Client-supplied trust** — `X-Device-Id`, `X-App-Version`, `X-Forwarded-For`,
+   or an HMAC header the server believes without binding it to the session.
+4. **Token lifecycle** — long-lived tokens, refresh tokens that survive logout,
+   tokens valid after a password change, unsigned or `alg: none` JWTs.
+5. **OTP and device binding** — no attempt cap, reusable code, or a
+   `device_id` that can simply be omitted.
+6. **Excessive data exposure** — the full database row, including hashes and
+   internal flags, returned to the client that "won't show it".
+7. **Deep links** — a link that drives an authenticated action (payment
+   confirmation, invite acceptance) without verifying the caller. Test the API
+   the link calls, not the handler.
+8. **Attestation gaps** — Play Integrity / App Attest absent, client-asserted,
+   or replayable.
+
+## Verify before reporting
+
+- Fresh login on both accounts; treat short-lived mobile tokens as expiring.
+- For writes, re-read as **both** accounts to prove persistence — a 200 is not
+  persistence.
+- Redact third-party PII; use accounts you own.
+- Include app version, build number, and platform in the report. Claims about
+  token storage or pinning need device-level evidence; if you cannot produce it,
+  leave the claim out.
+
+## Practice first
+
+The bundled [practice lab](/usage/practice-lab) contains every class above
+except the device-only ones, and runs with no dependencies:
+
+```bash
+python labs/vulnerable-api/server.py --port 8080
+```

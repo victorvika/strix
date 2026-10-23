@@ -50,6 +50,9 @@ Notable source-aware skills:
 - `infrastructure_lifecycle` (reconnaissance): abandoned or mutable external dependencies such as update endpoints, MX, storage, and control domains
 - `argument_injection` (vulnerabilities): shell-free CLI option smuggling, secondary argument-file parsing, and platform-specific argv transformation boundaries
 - `electron_desktop_apps` (technologies): Electron renderer-to-native trust boundaries, preload/IPC exposure, and navigation analysis
+- `bug_bounty_programs` (custom): operating inside a bounty/VDP program — scope and authorization gates, duplicate economics, impact chaining, triage-ready reporting
+- `authorization_matrix` (custom): systematic actor × object × verb authorization testing, object-id enumeration, and false-positive discipline
+- `mobile_api_testing` (custom): testing the API behind iOS/Android apps from captured traffic, a spec, or backend source — including what the sandbox cannot do
 
 Notable LLM security skills:
 - `llm_applications` (technologies): end-to-end OWASP 2026 LLM01-LLM10 coverage across models, RAG, vectors, agents, tools, outputs, supply chain, and resource controls

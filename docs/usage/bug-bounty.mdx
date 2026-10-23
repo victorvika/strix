@@ -1,0 +1,102 @@
+---
+title: "Bug Bounty Workflow"
+description: "Run Strix inside a bug bounty or VDP program without wasting budget or breaking policy"
+---
+
+Strix can be pointed at a bug bounty target, but the economics and the rules are
+different from an engagement you scoped yourself. This page covers the workflow
+that keeps runs compliant and paid.
+
+<Warning>
+  Testing an asset you are not authorized to test is a criminal offence in most
+  jurisdictions (in India, IT Act 2000 §43 and §66). Program registration or an
+  explicit invite is what authorizes you — a public marketing page, a
+  `security.txt`, or a "we care about security" statement does not.
+</Warning>
+
+## Before any traffic
+
+Confirm, in this order, and record what you found:
+
+1. The exact in-scope assets — wildcards often exclude the apex host, and mobile
+   apps, APIs, and staging environments are usually listed separately.
+2. Whether the program permits automated tooling. Many policies forbid scanners,
+   fuzzing, or LLM-generated reports; that restriction is binding on Strix runs.
+3. The rate limit. Default Strix instructions to `Max 2 req/sec` unless the
+   program publishes a different number.
+4. The payout posture. A VDP pays reputation only, and a program with a $50
+   ceiling cannot justify a deep run.
+
+## Choose the cheapest mode that answers the question
+
+| Goal | Command shape |
+| --- | --- |
+| Map the surface of a program you just joined | `strix -n -t https://target.com --scan-mode standard --max-budget 5` |
+| Test one high-value flow deeply | `strix -n -t https://target.com --scan-mode deep --max-budget 20 --instruction "<one flow>"` |
+| Test every declared API operation | `strix -n -t ./openapi.json -t https://api.target.com --scan-mode deep --max-budget 20` |
+| Review a program's open-source component or your own stack | `strix -n -t https://github.com/org/repo --scan-mode deep --max-budget 15` |
+
+`--scan-mode deep` is the documented mode for bounty work, but deep on an
+unmapped target mostly buys duplicate findings. Recon first, then deep on one
+flow.
+
+## Write an instruction that bounds the run
+
+An unbounded instruction is the main reason a bounty run costs $30 and returns
+noise. Every run should name the accounts, the scope, the limit, and the stop
+condition:
+
+```bash
+strix -n -t https://api.target.com -t ./openapi.json --scan-mode deep --max-budget 20 \
+  --instruction "Two accounts I control: attacker@test.com / victim@test.com, both registered.
+    Test ONLY object-level authorization and mass assignment on the endpoints in openapi.json.
+    Do not fuzz, do not crawl, max 2 req/sec. Stop at the first three validated findings."
+```
+
+<Note>
+  Strix treats the base URLs declared by an ingested API spec as in-scope. Check
+  the spec's `servers` block before a run so the agent cannot reach a host the
+  program excludes.
+</Note>
+
+## Spend and stop rules
+
+- Always set `--max-budget`. Without it the run has no ceiling.
+- Two runs per surface. If the second produces nothing new, change surface
+  rather than raising the budget.
+- Track the real cost in `strix_runs/<run-name>/run.json` (`llm_usage.cost`).
+- Exit code `2` means "a finding was reported", not "a finding is real" — verify
+  before submitting.
+
+## Verify before submitting
+
+A triage-ready finding needs a fresh session, two accounts you control, the raw
+request and response, and a demonstrated impact. The packaged
+`bug_bounty_programs` and `authorization_matrix` skills encode the full method;
+the short version:
+
+- Re-run from a clean login. Stale tokens produce phantom 200s.
+- Confirm the data is really the other account's, using a field you set yourself.
+- Escalate until the next step needs an assumption, then stop and state the
+  highest impact you actually proved.
+- One finding per report. Never bundle a low-severity issue into a high one.
+
+## Costs, duplicates, and expectations
+
+Bounty income is not salary: first payouts commonly take months, and duplicate
+pressure is highest on the classes automated tools report first (missing
+headers, version disclosure, open redirect, scanner-grade XSS). Aim at
+authorization, business logic, and freshly shipped endpoints instead.
+
+Per-run LLM cost is the part most people forget. A deep run is $5–$50 depending
+on model and budget; twenty unfocused runs is a real loss with no payout. Budget
+per week, not per mood.
+
+## Where the law and the policy land
+
+- Never test an out-of-scope asset, even passively.
+- Never touch another customer's data — reachability is not permission. Prove
+  with your own two accounts and redact everything else.
+- No denial of service, no volumetric fuzzing, no brute force at production
+  scale unless the policy explicitly allows it.
+- Do not disclose publicly before the program does.
